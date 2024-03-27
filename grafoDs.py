@@ -3,11 +3,8 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 import networkx as nx
 
-# Função para calcular a Distância de Jaccard entre dois conjuntos de palavras
-def jaccard_similarity(set1, set2):
-    intersection = len(set1.intersection(set2))
-    union = len(set1.union(set2))
-    return 1 - intersection / union if union != 0 else 0
+
+#Grafo construido baseao na DESCRiÇÃO do curso
 
 df_des = pd.read_csv('Coursera.csv', delimiter=',', low_memory=False)
 df_des = df_des[['Course Name', 'University', 'Course Description']]
@@ -17,6 +14,7 @@ df_des = df_des.reindex(columns=colunas_plt_ordem)
 df_des = df_des.rename(columns=colunas_plt_nome)
 df_des['Instituição | Curso'] = df_des['Instituição'].astype(str) + ' - ' + df_des['Título'].astype(str)
 df_des = df_des.dropna()
+
 # Extrair as descrições dos cursos
 descriptions = df_des['Descrição']
 
@@ -25,44 +23,45 @@ tfidf_vectorizer = TfidfVectorizer()
 tfidf_matrix = tfidf_vectorizer.fit_transform(descriptions)
 
 # Calcular a similaridade de cosseno entre as descrições
-similarity_matrix_cosine = cosine_similarity(tfidf_matrix, tfidf_matrix)
+similarity_matrix = cosine_similarity(tfidf_matrix, tfidf_matrix)
 
-# Calcular a Distância de Jaccard entre as descrições
+#Construço do Grafo
+G = nx.Graph()
 num_courses = len(df_des)
-jaccard_matrix = [[0]*num_courses for _ in range(num_courses)]
-for i in range(num_courses):
-    for j in range(i+1, num_courses):
-        set1 = set(tfidf_matrix[i].nonzero()[1])
-        set2 = set(tfidf_matrix[j].nonzero()[1])
-        jaccard_dist = jaccard_similarity(set1, set2)
-        jaccard_matrix[i][j] = jaccard_dist
-        jaccard_matrix[j][i] = jaccard_dist
 
-# Construir o grafo usando similaridade de cosseno
-G_cosine = nx.Graph()
+for curso in df_des['Instituição | Curso']:
+    G.add_node(curso)
+    
+#Define o limiar de similiarade para determinar as arestas que conectam os vétices
 limiar_similaridade = 0.5
+
 for i in range(num_courses):
     for j in range(i+1, num_courses):
-        if similarity_matrix_cosine[i][j] > limiar_similaridade:
-            G_cosine.add_edge(df_des.loc[i, 'Instituição | Curso'], df_des.loc[j, 'Instituição | Curso'], weight=similarity_matrix_cosine[i][j])
+        if similarity_matrix[i][j] > limiar_similaridade:
+            G.add_edge(df_des.loc[i, 'Instituição | Curso'], df_des.loc[j, 'Instituição | Curso'], weight=similarity_matrix[i][j])
 
-# Construir o grafo usando distância de Jaccard
-G_jaccard = nx.Graph()
-limiar_distancia = 0.2
+# Calcular a similaridade de cosseno entre as descrições e adicionar arestas conforme necessário
 for i in range(num_courses):
     for j in range(i+1, num_courses):
-        if jaccard_matrix[i][j] < limiar_distancia:
-            G_jaccard.add_edge(df_des.loc[i, 'Instituição | Curso'], df_des.loc[j, 'Instituição | Curso'], weight=jaccard_matrix[i][j])
+        if similarity_matrix[i][j] > limiar_similaridade:
+            curso_i = df_des.loc[i, 'Instituição | Curso']
+            curso_j = df_des.loc[j, 'Instituição | Curso']
+            G.add_edge(curso_i, curso_j, weight=similarity_matrix[i][j])
 
-# Salvar os grafos em arquivos
-num_nodes_cosine = G_cosine.number_of_nodes()
-print("Número de nós (Similaridade de Cosseno):", num_nodes_cosine)
-num_edges_cosine = G_cosine.number_of_edges()
-print("Número de arestas (Similaridade de Cosseno):", num_edges_cosine)
-nx.write_gexf(G_cosine, "cursos_similares_des_cosseno.gexf")
+# Número de nós
+num_nodes = G.number_of_nodes()
+print("Número de nós:", num_nodes)
 
-num_nodes_jaccard = G_jaccard.number_of_nodes()
-print("Número de nós (Distância de Jaccard):", num_nodes_jaccard)
-num_edges_jaccard = G_jaccard.number_of_edges()
-print("Número de arestas (Distância de Jaccard):", num_edges_jaccard)
-nx.write_gexf(G_jaccard, "cursos_similares_des_jaccard.gexf")
+# Número de arestas
+num_edges = G.number_of_edges()
+print("Número de arestas:", num_edges)
+
+# Salvar o grafo em um arquivo
+nx.write_gexf(G, "cursos_similares_desc.gexf")
+
+#Exibe a lista de adjacência do curso
+lista_adjacencia_curso_i = G.neighbors('Coursera Project Network - Business Strategy: Business Model Canvas Analysis with Miro')
+
+for vizinho in lista_adjacencia_curso_i:
+    print(vizinho)
+    
