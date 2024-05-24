@@ -1,67 +1,79 @@
+import streamlit as st
 import pandas as pd
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 import networkx as nx
+import graphviz
 
-#Grafo construido baseao nas SKILLS do curso
 
-df_skl = pd.read_csv('Coursera.csv', delimiter=',', low_memory=False)
-df_skl = df_skl[['Course Name', 'University', 'Skills']]
-colunas_plt_ordem = ['University', 'Course Name', 'Skills']
-colunas_plt_nome = {'University':'Instituição', 'Course Name':'Título', 'Skills':'Skills'}
-df_skl = df_skl.reindex(columns=colunas_plt_ordem)
-df_skl = df_skl.rename(columns=colunas_plt_nome)
-df_skl['Instituição | Curso'] = df_skl['Instituição'].astype(str) + ' - ' + df_skl['Título'].astype(str)
-df_skl = df_skl.dropna()
+# Carregar dados do CSV
+@st.cache_data
+def carregar_dados():
+    df_skl = pd.read_csv('Coursera.csv', delimiter=',', low_memory=False)
+    df_skl = df_skl[['Course Name', 'University', 'Skills']]
+    colunas_plt_ordem = ['University', 'Course Name', 'Skills']
+    colunas_plt_nome = {'University': 'Instituição', 'Course Name': 'Título', 'Skills': 'Skills'}
+    df_skl = df_skl.reindex(columns=colunas_plt_ordem)
+    df_skl = df_skl.rename(columns=colunas_plt_nome)
+    df_skl['Instituição | Curso'] = df_skl['Instituição'].astype(str) + ' - ' + df_skl['Título'].astype(str)
+    df_skl = df_skl.dropna()
+    return df_skl
 
-# Extrair as SKILLS dos cursos
+# Extrair descrições e calcular TF-IDF
+@st.cache_data
+def calcular_tfidf(descriptions):
+    tfidf_vectorizer = TfidfVectorizer()
+    tfidf_matrix = tfidf_vectorizer.fit_transform(descriptions)
+    return tfidf_matrix
+
+# Calcular similaridade de cosseno
+@st.cache_data
+def calcular_similaridade(_tfidf_matrix):
+    similarity_matrix = cosine_similarity(_tfidf_matrix, _tfidf_matrix)
+    return similarity_matrix
+
+# Função para gerar o grafo
+def gerar_grafo(df, similarity_matrix, limiar_similaridade):
+    G = nx.Graph()
+    num_courses = len(df)
+
+    for curso in df['Instituição | Curso']:
+        G.add_node(curso)
+
+    for i in range(num_courses):
+        for j in range(i+1, num_courses):
+            if similarity_matrix[i][j] > limiar_similaridade:
+                curso_i = df.loc[i, 'Instituição | Curso']
+                curso_j = df.loc[j, 'Instituição | Curso']
+                G.add_edge(curso_i, curso_j, weight=similarity_matrix[i][j])
+    return G
+
+# Carregar dados
+df_skl = carregar_dados()
+
+# Exibir interface do usuário
+st.title('Visualização de Trilhas de Aprendizagem')
+
+# Dropdown para selecionar o curso
+selected_course = st.selectbox("Selecione um curso:", df_skl['Instituição | Curso'])
+
+# Slider para escolher o limiar de similaridade
+limiar_similaridade = st.slider("Escolha o limiar de similaridade:", min_value=0.0, max_value=1.0, value=0.5, step=0.01)
+
+# Extrair descrições e calcular TF-IDF
 descriptions = df_skl['Skills']
+tfidf_matrix = calcular_tfidf(descriptions)
 
-# Calcular TF-IDF das SKILLS
-tfidf_vectorizer = TfidfVectorizer()
-tfidf_matrix = tfidf_vectorizer.fit_transform(descriptions)
+# Calcular similaridade de cosseno
+similarity_matrix = calcular_similaridade(tfidf_matrix)
 
-# Calcular a similaridade de cosseno entre as skills
-similarity_matrix = cosine_similarity(tfidf_matrix, tfidf_matrix)
+# Gerar o grafo
+G = gerar_grafo(df_skl, similarity_matrix, limiar_similaridade)
 
-#Construço do Grafo
-G = nx.Graph()
-num_courses = len(df_skl)
+# Exibir o grafo
+st.graphviz_chart(graphviz.Source(nx.nx_agraph.to_agraph(G).to_string()))
 
-for curso in df_skl['Instituição | Curso']:
-    G.add_node(curso)
-
-#Define o limiar de similiarade para determinar as arestas que conectam os vétices   
-limiar_similaridade = 0.5
-
-# Calcular a similaridade de cosseno entre as descrições e adicionar arestas conforme necessário
-for i in range(num_courses):
-    for j in range(i+1, num_courses):
-        if similarity_matrix[i][j] > limiar_similaridade:  # Defina um limiar de similaridade
-            G.add_edge(df_skl.loc[i, 'Instituição | Curso'], df_skl.loc[j, 'Instituição | Curso'], weight=similarity_matrix[i][j])
-
-# Calcular a similaridade de cosseno entre as descrições e adicionar arestas conforme necessário
-for i in range(num_courses):
-    for j in range(i+1, num_courses):
-        if similarity_matrix[i][j] > limiar_similaridade:
-            curso_i = df_skl.loc[i, 'Instituição | Curso']
-            curso_j = df_skl.loc[j, 'Instituição | Curso']
-            G.add_edge(curso_i, curso_j, weight=similarity_matrix[i][j])
-
-# Número de nós
-num_nodes = G.number_of_nodes()
-print("Número de nós:", num_nodes)
-
-# Número de arestas
-num_edges = G.number_of_edges()
-print("Número de arestas:", num_edges)
-
-# Salvar o grafo em um arquivo
-nx.write_gexf(G, "cursos_similares_skills.gexf")
-
-#Exibe a lista de adjacência do curso
-lista_adjacencia_curso_i = G.neighbors('Coursera Project Network - Business Strategy: Business Model Canvas Analysis with Miro')  # Para versões mais recentes do NetworkX
-
-for vizinho in lista_adjacencia_curso_i:
-    print(vizinho)
-
+# Exibir nome dos cursos e pesos das arestas
+st.subheader("Cursos e Pesos das Arestas:")
+for u, v, w in G.edges(data=True):
+    st.write(f"Cursos: {u} -> {v}, Peso: {w['weight']}")

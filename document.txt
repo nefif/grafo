@@ -1,0 +1,51 @@
+Com o intuito de exemplificar o conceito do TF-IDF, podemos considerar os seguintes documentos (d) do conjunto de documentos (D):
+\begin{itemize}
+    \item Documento 1: "data science is an interdisciplinary field"\\
+    \begin{center}
+        \begin{tabular}{c|c|c|c}
+         \hline \textbf{Termo} & \textbf{TF} & \textbf{IDF} & \textbf{TFIDF} \\
+         \hline {data} & 1/6 = 0.1667 & log(3/4) = -0.1249 & 0.1667 x -0.1249 = -0,0208 \\
+         \hline {science} & 1/6 = 0.1667 & log(3/4) = -0.1249 & 0.1667 x -0.1249 = -0,0208 \\
+         \hline {is} & 1/6 = 0.1667 & log(3/4) = -0,1249 & 0.1667 x -0.1249 = -0,0208 \\
+         \hline {an} & 1/6 = 0.1667 & log(3/2) = 0.1760 & 0.1667 x 0.176 = 0,0283 \\
+         \hline {interdisciplinary} & 1/6 = 0.1667 & log(3/2) = 0.1667 & 0.1667 x 0.1760 = 0.0795 \\
+         \hline {field} & 1/6 = 0.1667 & log(3/2) = 0.1760 & 0.1667 x 0.1760 = 0.0795 \\ 
+        \end{tabular}
+    \end{center}    
+    \item Documento 2: "machine learning is a subset of data science"\\
+        \begin{center}
+        \begin{tabular}{c|c|c|c}
+         \hline \textbf{Termo} & \textbf{TF} & \textbf{IDF} & \textbf{TFIDF} \\
+         \hline {machine} & 1/8 = 0.125 & log(3/2) = 0.1760 & 0.125 x 0.477 = 0.0795 \\
+         \hline {learning} & 1/8 = 0.125 & log(3/2) = 0.1760 & 0.125 x 0.176 = 0.0293 \\
+         \hline {is} & 1/8 = 0.125 & log(3/4) = -0.1249 & 0.125 x 0.176 = -0,0208 \\
+         \hline {a} & 1/8 = 0.125 & log(3/2) = 0.1760 & 0.125 x 0.176 = 0.0293 \\
+         \hline {subset} & 1/8 = 0.125 & log(3/2) = 0.1760 & 0.125 x 0.176 = 0.0293 \\
+         \hline {of} & 1/8 = 0.125 & log(3/2) = 0.1760 & 0.125 x 0.477 = 0.0795 \\
+         \hline {data} & 1/8 = 0.125 & log(3/4) = -0.1249 & 0.125 x 0.477 = 0.0795 \\
+         \hline {science} & 1/8 = 0.125 & log(3/4) = -0.1249 & 0.125 x 0.477 = 0.0795 \\
+        \end{tabular}
+    \end{center}
+    \item Documento 3: "python is commonly used in data science"\\
+        \begin{center}
+        \begin{tabular}{c|c|c|c}
+         \hline \textbf{Termo} & \textbf{TF} & \textbf{IDF} & \textbf{TFIDF} \\
+         \hline {python} & 1/7 = 0.1428 & log(3/2) = 0.1760 & 0.1428 x 0.477 = 0.0795 \\
+         \hline {is} & 1/7 = 0.1428 & log(3/4) = -0.1249 & 0.1428 x 0.176 = 0.0293 \\
+         \hline {commonly} & 1/7 = 0.1428 & log(3/2) = 0.1760 & 0.1428 x 0.176 = 0.0293 \\
+         \hline {used} & 1/7 = 0.1428 & log(3/2) = 0.1760 & 0.1428 x 0.176 = 0.0293 \\
+         \hline {in} & 1/7 = 0.1428 & log(3/2) = 0.1760 & 0.1428 x 0.477 = 0.0795 \\
+         \hline {data} & 1/7 = 0.1428 & log(3/4) = -0.1249 & 0.1428 x 0.477 = 0.0795 \\
+         \hline {science} & 1/7 = 0.1428 & log(3/4) = -0.1249 & 0.1428 x 0.477 = 0.0795 \\
+        \end{tabular}
+    \end{center}
+\end{itemize}
+\\
+Após a obtenção dos valores TF-IDF de cada termo é possível gerar a Matriz de Similaridade entre cada documento (d) do Conjunto (D), utilizando a similaridade de cosseno.
+Onde:
+\begin{itemize}
+    \item $x$ e $y$ são os vetores TF-IDF dos documentos a serem comparados;
+    \item $x . y$ é o produto escalar entre $x$ e $y$;
+    \item $||x||$ e $||y||$ são as normas dos vetores $x$ e $y$.
+\end{itemize}
+Aplicando a similaridade de cosseno, obtemos:\\
