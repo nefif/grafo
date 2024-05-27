@@ -128,3 +128,14 @@ for cluster in range(optimal_n_clusters):
     print(f"Top Keywords: {', '.join(top_keywords)}")
     print(cluster_data[['Course Name', 'University']].to_string(index=False))
 
+
+# Visualização dos clusters
+plt.figure(figsize=(10, 7))
+for cluster in range(optimal_n_clusters):
+    cluster_data = df_des[df_des['Cluster'] == cluster]
+    plt.scatter(cluster_data.index, [cluster] * len(cluster_data), label=f'Cluster {cluster}')
+plt.legend()
+plt.title('Clusters de Cursos')
+plt.xlabel('Índice do Curso')
+plt.ylabel('Cluster')
+plt.show()
