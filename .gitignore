@@ -19,3 +19,13 @@ vendor/
 
 # Máquina Virtual
 myenv/
+myenv2/
+
+# Arquivo de Imagem
+*.png
+
+# Cache dos Vetores
+.vector_cache
+
+# Pastas dos Clusters
+Clustered_Courses
